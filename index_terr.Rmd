@@ -285,7 +285,7 @@ totPop <- sum(pop2022$X.3)
 # pie
 ```
 
-## Bipartisan Infrastructure Law Funding in the Territories
+## Bipartisan Infrastructure Law Funding in the U.S. Territories
 
 <div class = "row">
 <div class = "col-md-8" style="padding-right:5px;">
