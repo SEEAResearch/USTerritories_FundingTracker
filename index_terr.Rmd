@@ -26,69 +26,40 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 #install packages 
 library(sf)
 library(dplyr)
-library(leaflet)
-library(stringi)
-library(RColorBrewer)
 library(tidyverse)
 library(ggplot2)
-library(rgdal)
 library(kableExtra)
-library(scales)
 library(ggrepel)
 library(formattable)
 library(tmap)
-library(fontawesome)
-library(magick)
-library(mapview)
 library(extrafont)
-library(ceramic)
 library(mapboxapi)
-library(knitr)
 font_import("C:/Users/GraceParker/Downloads/Open_Sans")
-# set working directory 
 
 #insert data
-data_raw <- read.csv("C:/Users/GraceParker/Downloads/2023_FederalFundingTracker/BIL_AwardSummaries_2023-07-03.csv")
-
 territories <- st_read("C:/Users/GraceParker/Downloads/2023_FederalFundingTracker/Territories/", quiet=TRUE)
 
 #clean BIL data
-# targetD = toupper(targetC)
 targetF <- c("01","05","12","13","21","22","28","37","45","47","51","72","60","69","66","78")
 targetG <- c(1,5,12,13,21,22,28,37,45,47,51,72,60,69,66,78)
-data <-select(data_raw, awarding_agency_name, total_obligated_amount, recipient_state_name, recipient_county_name, prime_award_summary_recipient_state_fips_code)
-SETerr <- dplyr::filter(territories,FIPS %in% targetF)
-targetH <- c("01","05","12","13","21","22","28","37","45","47","51")
-SEstates <- dplyr::filter(territories,FIPS %in% targetH)
-SETerrData <- dplyr::filter(data,prime_award_summary_recipient_state_fips_code %in% targetG)
+targetH <- c("72","60","69","66","78")
+SETerr <- dplyr::filter(territories,FIPS %in% targetF) #filter to SE and territories
+# SEstates <- dplyr::filter(territories,FIPS %in% targetH) #filter to territories
 
-#group funding by territory/state
-fundByState <- group_by(SETerrData, prime_award_summary_recipient_state_fips_code) %>% dplyr::summarise(
-  StateFunding = sum(total_obligated_amount))%>%
-  as.data.frame()
+#insert function/award type and population data by year
+Asst2024_raw <- read.csv("C:/Users/GraceParker/Southeast Energy Efficiency Alliance Inc/Team SEEA - Documents/Research/Project_Files/2023_FederalFundingTracker/GitHubFolder/Data_01_22_2024/BILFY2~3/FY2024~3.CSV")
+Con2024_raw <- read.csv("C:/Users/GraceParker/Southeast Energy Efficiency Alliance Inc/Team SEEA - Documents/Research/Project_Files/2023_FederalFundingTracker/GitHubFolder/Data_01_22_2024/BILFY2~3/FY2024~2.CSV")
+Unl2024_raw <- read.csv("C:/Users/GraceParker/Southeast Energy Efficiency Alliance Inc/Team SEEA - Documents/Research/Project_Files/2023_FederalFundingTracker/GitHubFolder/Data_01_22_2024/BILFY2~3/FY2024~4.CSV")
 
-SETerr$FIPS <- as.numeric(SETerr$FIPS)
-colnames(fundByState)[1] <- "FIPS"
-#join fundbyCounty to SEcounties
-BIL <- left_join(SETerr, fundByState, by = "FIPS")
+Asst2023_raw <- read.csv("C:/Users/GraceParker/Southeast Energy Efficiency Alliance Inc/Team SEEA - Documents/Research/Project_Files/2023_FederalFundingTracker/GitHubFolder/Data_01_22_2024/BILFY2~2/FY2023~3.CSV")
+Con2023_raw <- read.csv("C:/Users/GraceParker/Southeast Energy Efficiency Alliance Inc/Team SEEA - Documents/Research/Project_Files/2023_FederalFundingTracker/GitHubFolder/Data_01_22_2024/BILFY2~2/FY2023~2.CSV")
+Unl2023_raw <- read.csv("C:/Users/GraceParker/Southeast Energy Efficiency Alliance Inc/Team SEEA - Documents/Research/Project_Files/2023_FederalFundingTracker/GitHubFolder/Data_01_22_2024/BILFY2~2/FY2023~4.CSV")
 
-bins <- c(1000000000, 1500000000, 2000000000, 2500000000,3000000000,Inf)
-pal <- colorBin(c("#B8E9F0","#75C7D3", "#00869F", "#006A7E","#00447C"), domain = BIL$StateFunding, bins=bins)
+Asst2022_raw <- read.csv("C:/Users/GraceParker/Southeast Energy Efficiency Alliance Inc/Team SEEA - Documents/Research/Project_Files/2023_FederalFundingTracker/GitHubFolder/Data_01_22_2024/BILFY2~1/FY2022~3.CSV")
+Con2022_raw <- read.csv("C:/Users/GraceParker/Southeast Energy Efficiency Alliance Inc/Team SEEA - Documents/Research/Project_Files/2023_FederalFundingTracker/GitHubFolder/Data_01_22_2024/BILFY2~1/FY2022~2.CSV")
+Unl2022_raw <- read.csv("C:/Users/GraceParker/Southeast Energy Efficiency Alliance Inc/Team SEEA - Documents/Research/Project_Files/2023_FederalFundingTracker/GitHubFolder/Data_01_22_2024/BILFY2~1/FY2022~4.CSV")
 
-state_popup <- paste0("<strong>State Name: </strong>", 
-                      str_to_title(BIL$NAME), 
-                      "<br><strong>Total BIL Funding: </strong>", 
-                      formattable::currency(BIL$StateFunding, digits = 0L))
-
-#insert function/award type and population data
-Asst2023_raw <- read.csv("C:/Users/GraceParker/Downloads/2023_FederalFundingTracker/BIL_FY2023_P8_wFunction/FY2023P01-P08_Assistance.csv")
-Con2023_raw <- read.csv("C:/Users/GraceParker/Downloads/2023_FederalFundingTracker/BIL_FY2023_P8_wFunction/FY2023P01-P08_Contracts.csv")
-Unl2023_raw <- read.csv("C:/Users/GraceParker/Downloads/2023_FederalFundingTracker/BIL_FY2023_P8_wFunction/FY2023P01-P08_Unlinked.csv")
-
-Asst2022_raw <- read.csv("C:/Users/GraceParker/Downloads/2023_FederalFundingTracker/BIL_FY2022_wFunction/FY2022_Assistance.csv")
-Con2022_raw <- read.csv("C:/Users/GraceParker/Downloads/2023_FederalFundingTracker/BIL_FY2022_wFunction/FY2022_Contracts.csv")
-Unl2022_raw <- read.csv("C:/Users/GraceParker/Downloads/2023_FederalFundingTracker/BIL_FY2022_wFunction/FY2022_Unlinked.csv")
-
+#insert population data
 pop2022_raw <- read.csv("C:/Users/GraceParker/Downloads/2023_FederalFundingTracker/POP2022.csv")
 
 #append data together
@@ -97,59 +68,28 @@ funData <- rbind(funData, Unl2023_raw)
 funData <- rbind(funData, Asst2022_raw)
 funData <- rbind(funData, Con2022_raw)
 funData <- rbind(funData, Unl2022_raw)
+funData <- rbind(funData, Asst2024_raw)
+funData <- rbind(funData, Con2024_raw)
+funData <- rbind(funData, Unl2024_raw)
 
 #select
 funData <- funData[!is.na(funData$transaction_obligated_amount),]
-funData <-select(funData, budget_subfunction, awarding_agency_name, awarding_subagency_name, transaction_obligated_amount, recipient_state, recipient_county, award_type)
-
-#select population values
-colnames(pop2022_raw)[1] <- "State"
-pop2022 <-select(pop2022_raw, State, X.3)
-
-#get total and perCap for US
-totalUS <- formattable::currency(sum(funData$transaction_obligated_amount), digits=0L)
-pop2022$X.3 <- as.numeric(gsub(",","",pop2022$X.3))
-totPopUS <- pop2022$X.3[4]
-avgPerCapUS <- formattable::currency(totalUS/totPopUS, digits=0L)
+funData <-select(funData, budget_subfunction, awarding_agency_name, awarding_subagency_name, transaction_obligated_amount, recipient_state, recipient_county, award_type, recipient_name, program_activity_name, cfda_number, cfda_title)
 
 #filter
 targetE <- c("AL","AR","FL","GA","KY", "LA", "MS", "NC", "SC", "TN", "VA", "GU", "PR", "MP", "AS", "VI")
 targetO <- c("GU", "PR", "MP", "AS", "VI")
 funData <- dplyr::filter(funData, recipient_state %in% targetE)
 DataTerr <- dplyr::filter(funData, recipient_state %in% targetO)
-funData$Region <- "Southeast"
-sankey_SE_Data <- select(funData, budget_subfunction, transaction_obligated_amount, Region)
-sankey_SE_Data2 <- select(funData, award_type, transaction_obligated_amount, Region)
-# colnames(sankey_SE_Data2)[1] <- "budget_subfunction"
-# colnames(sankey_SE_Data2)[3] <- "award_type"
-# sankey_SE_Data <- as.data.frame(rbind(sankey_SE_Data, sankey_SE_Data2))
-write.csv(sankey_SE_Data,file="C:/Users/GraceParker/Downloads/2023_FederalFundingTracker/funData_sankey_states.csv")
-#filter pop by state
-targetF <- c(".Alabama",".Arkansas",".Florida",".Georgia",".Kentucky", ".Louisiana", ".Mississippi", ".North Carolina", ".South Carolina", ".Tennessee", ".Virginia")
-pop2022 <- dplyr::filter(pop2022, State %in% targetF)
 
-#group by state and sum funding
-stateData <- funData %>%                                     
-  group_by(recipient_state) %>%
-  dplyr::summarise(Funding = sum(transaction_obligated_amount)) %>% 
+#group funding by territory/state
+fundByState <- group_by(DataTerr, recipient_state) %>% dplyr::summarise(
+  StateFunding = sum(transaction_obligated_amount))%>%
   as.data.frame()
 
-#calculate percent and per cap funding
-colnames(stateData)[1] <- "State"
-pop2022$State <- c('AL', 'AR', 'FL', 'GA', 'KY', 'LA', 'MS', 'NC', 'SC', 'TN', 'VA')
-stateData <- left_join(stateData, pop2022, by = "State") 
-stateData$Funding <- as.numeric(stateData$Funding)
-stateData$X.3 <- as.numeric(gsub(",","",stateData$X.3))
-totPop <- sum(stateData$X.3)
-stateData$perCapita <- stateData$Funding/stateData$X.3
-stateData$Percent <- stateData$Funding/sum(stateData$Funding)*100
-stateData$Percent <- format(round(stateData$Percent, 2), nsmall=2)
-stateData$Percent <- as.numeric(stateData$Percent)
-stateData$Funding <- signif(stateData$Funding, 5)
-stateData$Funding <- formattable::currency(stateData$Funding, digits = 0L)
-stateData$perCapita <- formattable::currency(stateData$perCapita, digits = 0L)
-pop2022$X.3 <- as.numeric(gsub(",","",pop2022$X.3))
-totPop <- sum(pop2022$X.3)
+colnames(fundByState)[1] <- "STATE"
+#join shapefile to data for terr + states
+BIL <- left_join(SETerr, fundByState, by = "STATE")
 
 # #Investigate negative values
 # deoblig <- filter(funData, transaction_obligated_amount < 0)
@@ -300,9 +240,10 @@ terr_pop <- read.csv("C:/Users/GraceParker/Downloads/2023_FederalFundingTracker/
 # fundByTerr$Funding <- formattable::currency(fundByTerr$Funding, digits = 0L)
 targetN <- c("AS","GU", "MP", "PR", "VI")
 terr_pop$State <- c("AS","GU","MP","PR","VI")
-terrData <- left_join(stateData, terr_pop, by = "State")%>%
+colnames(fundByState)[1] <- "State"
+terrData <- left_join(fundByState, terr_pop, by = "State")%>%
   dplyr::filter(State %in% targetN)
-colnames(terrData)[6] <- "Territory"
+colnames(terrData)[3] <- "Territory"
 
 gTarg <- c("COOPERATIVE AGREEMENT (B)","PROJECT GRANT (B)")
 Grants_Terr <- dplyr::filter(funData, award_type %in% gTarg)%>%dplyr::filter(recipient_state %in% targetN)%>%
@@ -310,21 +251,21 @@ Grants_Terr <- dplyr::filter(funData, award_type %in% gTarg)%>%dplyr::filter(rec
   dplyr::summarise(Funding = sum(transaction_obligated_amount)) %>% 
   as.data.frame()
 
-terrData$perCapita <- terrData$Funding/terrData$X2022
+terrData$perCapita <- terrData$StateFunding/terrData$X2022
 colnames(Grants_Terr)[1] <- "State"
 terrData <- left_join(terrData,Grants_Terr, by="State")
-terrData$GrantsPerCap = terrData$Funding.y/terrData$X2022
+terrData$GrantsPerCap = terrData$Funding/terrData$X2022
 terrData$GrantsPerCap <- formattable::currency(terrData$GrantsPerCap, digits=0L)
-terrData$Funding.y <- signif(as.numeric(terrData$Funding.y), 5)
-terrData$Funding.y <- formattable::currency(terrData$Funding.y, digits=0L)
+terrData$Funding <- signif(as.numeric(terrData$Funding), 5)
+terrData$Funding <- formattable::currency(terrData$Funding, digits=0L)
  
-terrData<- terrData%>% select(Territory, Funding.x, perCapita, Funding.y, GrantsPerCap) 
-terrData <- terrData[order(terrData$Funding.x,decreasing=TRUE),]
+terrData<- terrData%>% select(Territory, StateFunding, perCapita, Funding, GrantsPerCap) 
+terrData <- terrData[order(terrData$StateFunding,decreasing=TRUE),]
 
 # colnames(Grants_Terr)[1] <-"STATE"
 TerrMap <- SETerr%>% filter(STATE%in% targetN)
 colnames(TerrMap)[2] <- "Territory"
-terrData$Territory[5] <- "Virgin Islands"
+terrData$Territory[3] <- "Virgin Islands"
 TerrGrantsMap <- left_join(TerrMap, terrData, by="Territory")
 Total <-TerrGrantsMap
 Grants <- TerrGrantsMap
@@ -332,26 +273,25 @@ Grants <- TerrGrantsMap
 tmap_mode(mode ="view")
 puerto <- tm_basemap("CartoDB.PositronNoLabels")+
 tm_shape(Total) +
-  tm_polygons("Funding.x",
+  tm_polygons("StateFunding",
       palette= c("#75C7D3", "#006A7E", "#00315E"),
       breaks=c(0, 50000000, 100000000, Inf),
       textNA= "$0",
       labels = c("$0-50 million", "$50-100 million", "$100 million+"),
       legend.position=c("right","bottom"),
-      popup.vars= c("Funding: "="Funding.x"),
+      popup.vars= c("Funding: "="StateFunding"),
       popup.format= list(prefix="$", big.num.abbr=NA),
       id= "NAME",
       title= "Territory Funding",
       border.col="white")+
   tm_shape(Grants) +
-  tm_polygons("Funding.y",
+  tm_polygons("Funding",
       palette= c("#75C7D3", "#006A7E", "#00315E"),
-      breaks=c(0, 30000000, 50000000, Inf),
+      breaks=c(0, 50000000, 100000000, Inf),
       textNA= "$0",
-      labels = c("$0-30 million", "$30-50 million",
-      "$50 million+"),
+      labels = c("$0-50 million", "$50-100 million", "$100 million+"),
       legend.show=FALSE,
-      popup.vars= c("Grants: "="Funding.y"),
+      popup.vars= c("Grants: "="Funding"),
       popup.format= list(prefix="$", big.num.abbr=NA),
       id= "STATE",
       title= "Grants Funding",
@@ -364,25 +304,24 @@ tm_view(set.view=c(-65.5,18,7))
 tmap_mode(mode ="view")
 guam <- tm_basemap("CartoDB.PositronNoLabels")+
 tm_shape(Total) +
-  tm_polygons("Funding.x",
+  tm_polygons("StateFunding",
       palette= c("#75C7D3", "#006A7E", "#00315E"),
       breaks=c(0, 50000000, 100000000, Inf),
       textNA= "$0",
       labels = c("$0-50 million", "$50-100 million", "$100 million+"),
       legend.show=FALSE,
-      popup.vars= c("Funding: "="Funding.x"),
+      popup.vars= c("Funding: "="StateFunding"),
       popup.format= list(prefix="$", big.num.abbr=NA),
       id= "NAME",
       title= "Territory Funding",
       border.col="white")+
   tm_shape(Grants) +
-  tm_polygons("Funding.y",
+  tm_polygons("Funding",
       palette= c("#75C7D3", "#006A7E", "#00315E"),
       breaks=c(0, 30000000, 50000000, Inf),
       textNA= "$0",
-      labels = c("$0-30 million", "$30-50 million",
-      "$50 million+"),
-      popup.vars= c("Grants: "="Funding.y"),
+      labels = c("$0-50 million", "$50-100 million", "$100 million+"),
+      popup.vars= c("Grants: "="Funding"),
       popup.format= list(prefix="$", big.num.abbr=NA),
       id= "STATE",
       title= "Grant Funding",
@@ -394,26 +333,26 @@ tm_view(set.view=c(144.8,14,8))
 #tmap AS
 samoa <- tm_basemap("CartoDB.PositronNoLabels")+
 tm_shape(Total) +
-  tm_polygons("Funding.x",
+  tm_polygons("StateFunding",
       palette= c("#75C7D3", "#006A7E", "#00315E"),
       breaks=c(0, 50000000, 100000000, Inf),
       textNA= "$0",
       labels = c("$0-50,000,000", "$50,000,000-100,000,000", "$100,000,000+"),
       legend.show=FALSE,
-      popup.vars= c("Funding: "="Funding.x"),
+      popup.vars= c("Funding: "="StateFunding"),
       popup.format= list(prefix="$", big.num.abbr=NA),
       id= "NAME",
       title= "Territory Funding",
       border.col="white")+
   tm_shape(Grants) +
-  tm_polygons("Funding.y",
+  tm_polygons("Funding",
       palette= c("#75C7D3", "#006A7E", "#00315E"),
-      breaks=c(0, 30000000, 50000000, Inf),
+      breaks=c(0, 50000000, 100000000, Inf),
       textNA= "$0",
       labels = c("$0-50,000,000", "$50,000,000-100,000,000",
       "$100,000,000+"),
       legend.show=FALSE,
-      popup.vars= c("Grants: "="Funding.y"),
+      popup.vars= c("Grants: "="Funding"),
       popup.format= list(prefix="$", big.num.abbr=NA),
       id= "STATE",
       title= "Grants Funding",
@@ -571,7 +510,7 @@ The [Infrastructure Investment and Jobs Act](https://www.congress.gov/bill/117th
 <div class = "row">
 <div class = "col-md-7" style="padding-right:25px;">
 ``` {r echo=FALSE}
-terrData$Percent <- 100*(as.numeric(terrData$Funding.x)/sum(as.numeric(terrData$Funding.x)))
+terrData$Percent <- 100*(as.numeric(terrData$StateFunding)/sum(as.numeric(terrData$StateFunding)))
 terrData$Percent <- format(round(terrData$Percent, 2), nsmall=2)
 terrData$Percent <- as.numeric(terrData$Percent)
 terrData$zone.start <- with(terrData, c(0, cumsum(Percent)[-length(Percent)]))  
@@ -601,9 +540,14 @@ ggsave("C:/Users/GraceParker/Downloads/2023_FederalFundingTracker/FundingbyTerr.
 <div class = "col-md-5">
 ``` {r echo=FALSE}
 
-terrData <-terrData%>%select(Territory, Funding.x, perCapita)
+terrData <-terrData%>%select(Territory, StateFunding, perCapita)
 colnames(terrData)[2] <- "Funding" 
+terrData$perCapita <- signif(as.numeric(terrData$perCapita), 5)
+terrData$perCapita <- formattable::currency(terrData$perCapita, digits=0L)
 colnames(terrData)[3] <- "Total Per Capita" 
+terrData$Funding <- signif(as.numeric(terrData$Funding), 5)
+terrData$Funding <- formattable::currency(terrData$Funding, digits=0L)
+
 # colnames(terrData)[4] <- "Grant Funding" 
 # colnames(terrData)[5] <- "Grants Per Capita" 
 terrTable<- terrData%>% kbl(row.names=FALSE) %>%
@@ -613,12 +557,6 @@ terrTable<- terrData%>% kbl(row.names=FALSE) %>%
   column_spec(1:3, "4cm")
 terrTable
 save_kable(terrTable,"C:/Users/GraceParker/Downloads/2023_FederalFundingTracker/Terrtable.png")
-
-
-terrTotal <- sum(terrData$Funding)
-percTerr <- as.numeric(terrTotal/totalUS*100)
-terrPoptotal <- sum(terrData$X2022)
-perCapitaTerr <- terrTotal/terrPoptotal
 
 ```
 </div>
@@ -646,7 +584,7 @@ colnames(funcAS)[1] <- "Category"
 pie <- ggplot(funcAS, aes(x="", y=Percent, fill=Category))+
   geom_bar(width = 1, stat = "identity")+
   coord_polar("y", start=0)+
-  scale_fill_manual(values=c("#900C3F","#C70039", "#D4442D", "#00869F", "#6171AF","#DCB6D0","#C799C8","#585757")) +
+  scale_fill_manual(values=c("#900C3F","#C70039", "#D4442D", "#FFF7B3","#00869F", "#6171AF","#DCB6D0","#C799C8","#D2D2D2","#585757")) +
   geom_text_repel(data = funcAS,
                    aes(y = label.point, label = ifelse(Percent>10,paste0(Percent, "%"),""), family="Open Sans"),
                    size = 4.5, color="#444444", nudge_x = 1, show.legend = FALSE)+
@@ -705,7 +643,7 @@ colnames(funcGU)[1] <- "Category"
 pie <- ggplot(funcGU, aes(x="", y=Percent, fill=Category))+
   geom_bar(width = 1, stat = "identity")+
   coord_polar("y", start=0)+
-  scale_fill_manual(values=c("#900C3F","#C70039", "#D4442D", "#00869F", "#6171AF","#DCB6D0","#C799C8","#585757")) +
+  scale_fill_manual(values=c("#900C3F","#C70039", "#D4442D", "#00869F", "#6171AF","#DCB6D0","#C799C8","#D2D2D2","#585757","#000000")) +
   geom_text_repel(data = funcGU,
                    aes(y = label.point, label = ifelse(Percent>10,paste0(Percent, "%"),""), family="Open Sans"),
                    size = 4.5, color= "#444444", nudge_x = 1, show.legend = FALSE)+
@@ -765,7 +703,7 @@ colnames(funcMP)[1] <- "Category"
 pie <- ggplot(funcMP, aes(x="", y=Percent, fill=Category))+
   geom_bar(width = 1, stat = "identity")+
   coord_polar("y", start=0)+
-  scale_fill_manual(values=c("#900C3F","#C70039", "#D4442D", "#00869F", "#6171AF","#DCB6D0","#C799C8","#585757")) +
+  scale_fill_manual(values=c("#FFA07A","#900C3F","#C70039", "#D4442D", "#00869F", "#6171AF","#DCB6D0","#C799C8","#585757")) +
   geom_text_repel(data = funcMP,
                    aes(y = label.point, label = ifelse(Percent>10,paste0(Percent, "%"),""), family="Open Sans"),
                    size = 4.5, color="#444444", nudge_x = 1, show.legend = FALSE)+
@@ -825,7 +763,7 @@ colnames(funcPR)[1] <- "Category"
 pie <- ggplot(funcPR, aes(x="", y=Percent, fill=Category))+
   geom_bar(width = 1, stat = "identity")+
   coord_polar("y", start=0)+
-  scale_fill_manual(values=c("#FFA07A","#900C3F", "#C70039", "#D4442D", "#00869F", "#6171AF","#DCB6D0","#C799C8", "#7B7B7B","#585757","#17202A")) +
+  scale_fill_manual(values=c("#FFA07A","#900C3F", "#C70039", "#D4442D", "#FFF7B3","#00869F", "#6171AF","#DCB6D0","#C799C8", "#7B7B7B","#585757","#17202A")) +
   geom_text_repel(data = funcPR,
                    aes(y = label.point, label = ifelse(Percent>10,paste0(Percent, "%"),""), family="Open Sans"),
                    size = 4.5, color="#444444", nudge_x = 1, show.legend = FALSE)+
@@ -879,7 +817,7 @@ colnames(funcVI)[1] <- "Category"
 pie <- ggplot(funcVI, aes(x="", y=Percent, fill=Category))+
   geom_bar(width = 1, stat = "identity")+
   coord_polar("y", start=0)+
-  scale_fill_manual(values=c("#FFA07A","#900C3F", "#C70039", "#00869F", "#6171AF","#DCB6D0","#C799C8", "#7B7B7B","#585757")) +
+  scale_fill_manual(values=c("#FFA07A","#900C3F", "#C70039", "#D4442D","#FFF7B3","#00869F", "#6171AF","#DCB6D0","#C799C8", "#7B7B7B","#585757")) +
   geom_text_repel(data = funcVI,
                    aes(y = label.point, label = ifelse(Percent>10,paste0(Percent, "%"),""), family="Open Sans"),
                    size = 4.5, color="#444444", nudge_x = 1, show.legend = FALSE)+
@@ -938,7 +876,7 @@ colnames(funcTerr)[1] <- "Category"
 pie <- ggplot(funcTerr, aes(x="", y=Percent, fill=Category))+
   geom_bar(width = 1, stat = "identity")+
   coord_polar("y", start=0)+
-  scale_fill_manual(values=c("#FFA07A","#900C3F", "#C70039", "#D4442D", "#00869F", "#6171AF","#DCB6D0","#C799C8", "#D2D2D2", "#7B7B7B","#585757","#17202A")) +
+  scale_fill_manual(values=c("#FFA07A","#900C3F", "#C70039", "#D4442D","#FFF7B3", "#00869F", "#6171AF","#DCB6D0","#C799C8", "#D2D2D2", "#7B7B7B","#585757","#17202A")) +
   geom_text_repel(data = funcTerr,
                    aes(y = label.point, label = ifelse(Percent>5 | Category == 'Energy conservation' ,paste0(Percent, "%"),""), family="Open Sans"),
                    size = 4.5, color= "#444444", nudge_x = 1, show.legend = FALSE) +
@@ -989,17 +927,17 @@ fundByType_Terr$label.point <- with(fundByType_Terr, (100-(zone.start + zone.end
 
 colnames(fundByType_Terr)[1] <- "Type"
 fundByType_Terr$Type <- str_to_title(fundByType_Terr$Type)
-fundByType_Terr$Type[4] <- "Direct Payment Specified Use"
-fundByType_Terr$Type[6] <- "Other Financial Assistance"
+fundByType_Terr$Type[5] <- "Direct Payment Specified Use"
+fundByType_Terr$Type[7] <- "Other Financial Assistance"
 fundByType_Terr$Type[1] <- "Block Grant"
 fundByType_Terr$Type[2] <- "Cooperative Agreement"
-fundByType_Terr$Type[5] <- "Formula Grant"
-fundByType_Terr$Type[7] <- "Project Grant"
+fundByType_Terr$Type[6] <- "Formula Grant"
+fundByType_Terr$Type[8] <- "Project Grant"
 
 pie <- ggplot(fundByType_Terr, aes(x="", y=Percent, fill=Type))+
   geom_bar(width = 1, stat = "identity")+
   coord_polar("y", start=0)+
-  scale_fill_manual(values=c("#900C3F", "#D4442D", "#FCB616", "#75C7D3", "#00869F", "#C799C8", "#D2D2D2", "#585757")) +
+  scale_fill_manual(values=c("#900C3F", "#D4442D", "#FCB616", "#52BE80","#75C7D3", "#00869F", "#C799C8", "#D2D2D2", "#585757")) +
   geom_text_repel(data = fundByType_Terr,
                    aes(y = label.point, label = ifelse(Percent>5,paste0(Percent, "%"),""),family="Open Sans"),
                    size = 4.5, color="#444444", nudge_x = 1, show.legend = FALSE, max.overlaps =20) +
@@ -1033,49 +971,59 @@ save_kable(terrTypeTable,"C:/Users/GraceParker/Downloads/2023_FederalFundingTrac
 <div class = "col-md-6" style="padding-right:20px;">
 ``` {r echo=FALSE}
 ###Weatherization Assistance Program Funding TERRITORIES
-WAPdata_terr <- read.csv("C:/Users/GraceParker/Downloads/2023_FederalFundingTracker/EnergyFunding_Territories/EnergyFunding_Territories.csv")%>%select(obligated_amount_from_IIJA_supplemental, program_activities_funding_this_award, recipient_name, cfda_numbers_and_titles, recipient_state_name)%>%filter(cfda_numbers_and_titles == "81.042: WEATHERIZATION ASSISTANCE FOR LOW-INCOME PERSONS")
+WAPdata <- funData %>%select(transaction_obligated_amount, program_activity_name, recipient_name, cfda_number, cfda_title, recipient_state)%>%filter(cfda_number == 81.042)%>%
+  filter(recipient_state %in% targetO)%>%
+  group_by(recipient_name)%>%
+  dplyr::summarise(Funding = sum(transaction_obligated_amount))
+  
+colnames(WAPdata)[2] <- "Funding"
+colnames(WAPdata)[1] <- "Recipient"
+WAPdata$Recipient <- paste(str_to_title(WAPdata$Recipient))
+WAPdata$Funding <- signif(WAPdata$Funding, 5)
+WAPdata$Funding <- currency(WAPdata$Funding, digits = 0L)
+WAPdata <- WAPdata[order(WAPdata$Funding,decreasing=TRUE),]
+WAPdata$Recipient[1] <- "Departamento De Desarrollo Economico Y Comercio (Puerto Rico)"
 
-colnames(WAPdata_terr)[1] <- "Funding"
-colnames(WAPdata_terr)[3] <- "Recipient"
-WAPdata_terr$Recipient <- paste(str_to_title(WAPdata_terr$Recipient))
-WAPdata_terr$Funding <- signif(WAPdata_terr$Funding, 5)
-WAPdata_terr$Funding <- currency(WAPdata_terr$Funding, digits = 0L)
-WAPdata_terr <- WAPdata_terr[order(WAPdata_terr$Funding,decreasing=TRUE),]
-WAPdata_terr$Recipient[1] <- "Departamento De Desarrollo Economico Y Comercio (Puerto Rico)"
-WAPtable<- WAPdata_terr%>% select(Recipient, Funding)%>% kbl(row.names=FALSE) %>%
+
+WAPtable<- WAPdata%>% select(Recipient, Funding)%>% kbl(row.names=FALSE) %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = F, html_font="Open Sans", font_size = 14)%>%  
   add_header_above(c("Weatherization Assistance Program Funding"=2))%>%
-  row_spec(1:5, color  = "#444444")%>%
-  column_spec(1, "12cm")%>%
-  column_spec(2, "3cm")
+  row_spec(1:5, color  = "#444444")
+  # column_spec(1, "12cm")%>%
+  # column_spec(2, "3cm")
 WAPtable
+###
+
 save_kable(WAPtable,"C:/Users/GraceParker/Downloads/2023_FederalFundingTracker/WAPtable_terr.png")
-WAPtotal_terr <- sum(WAPdata_terr$Funding)
+WAPtotal_terr <- sum(WAPdata$Funding)
 ```
 </div>
 
 <div class = "col-md-6">
 ```{r, echo=FALSE, fig.align='center'}
 ###State Energy Office Funding TERRITORIES
-SEOdata_terr <- read.csv("C:/Users/GraceParker/Downloads/2023_FederalFundingTracker/EnergyFunding_Territories/EnergyFunding_Territories.csv")%>%select(obligated_amount_from_IIJA_supplemental, program_activities_funding_this_award, recipient_name, cfda_numbers_and_titles, recipient_state_name)%>%filter(cfda_numbers_and_titles == "81.041: STATE ENERGY PROGRAM")
+SEOdata <- funData%>%select(transaction_obligated_amount, program_activity_name, recipient_name, cfda_number, recipient_state)%>%filter(cfda_number == 81.041)%>%
+  filter(recipient_state %in% targetO)%>%
+  group_by(recipient_name)%>%
+  dplyr::summarise(Funding = sum(transaction_obligated_amount))
 
-colnames(SEOdata_terr)[1] <- "Funding"
-colnames(SEOdata_terr)[3] <- "Recipient"
-SEOdata_terr$Recipient <- paste(str_to_title(SEOdata_terr$Recipient))
-SEOdata_terr$Funding <- signif(SEOdata_terr$Funding, 5)
-SEOdata_terr$Funding <- currency(SEOdata_terr$Funding, digits = 0L)
-SEOdata_terr <- SEOdata_terr[order(SEOdata_terr$Funding,decreasing=TRUE),]
-SEOdata_terr$Recipient[5] <- "Departamento De Desarrollo Economico Y Comercio (Puerto Rico)"
-
-SEOtable<-SEOdata_terr%>% select(Recipient, Funding)%>% kbl(row.names=FALSE) %>%
+colnames(SEOdata)[2] <- "Funding"
+colnames(SEOdata)[1] <- "Recipient"
+SEOdata$Recipient <- paste(str_to_title(SEOdata$Recipient))
+SEOdata$Funding <- signif(SEOdata$Funding, 5)
+SEOdata$Funding <- currency(SEOdata$Funding, digits = 0L)
+SEOdata <- SEOdata[order(SEOdata$Funding,decreasing=TRUE),]
+SEOdata$Recipient[5] <- "Departamento De Desarrollo Economico Y Comercio (Puerto Rico)"
+SEOtable<-SEOdata%>% select(Recipient, Funding)%>% kbl(row.names=FALSE) %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), html_font="Open Sans", font_size = 14, full_width = F)%>%
   add_header_above(c("State Energy Program Funding"=2))%>%
-  row_spec(1:5, color  = "#444444")%>%
-  column_spec(1, "12cm")%>%
-  column_spec(2, "3cm")
+  row_spec(1:5, color  = "#444444")
+  # column_spec(1, "12cm")%>%
+  # column_spec(2, "3cm")
 SEOtable
+
 save_kable(SEOtable,"C:/Users/GraceParker/Downloads/2023_FederalFundingTracker/SEOtable_terr.png")
-SEOtotal_terr <- sum(SEOdata_terr$Funding)
+SEOtotal_terr <- sum(SEOdata$Funding)
 
 # #function and award type data, filter to Territories minus PR
 # funcTerr <-dplyr::filter(funData, recipient_state=="AS"|recipient_state=="MP"|recipient_state=="GU"|recipient_state=="VI")%>%
