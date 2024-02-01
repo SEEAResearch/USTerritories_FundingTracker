@@ -485,7 +485,7 @@ tmap_arrange(puerto, guam, samoa, nrow=1, ncol=3, widths=c(.25,.25,.25))
 
 <div class = "col-md-4">
 <br>
-The [Infrastructure Investment and Jobs Act](https://www.congress.gov/bill/117th-congress/house-bill/3684), also known as the Bipartisan Infrastructure Law (BIL), was passed in November 2021 and allocates $1.2 trillion over ten years in funding for infrastructure projects including roads, public transit, broadband, and electric grid upgrades. As federal agencies continue to allocate BIL funding, this map shows how much funding recipients in the U.S. Territories have received as of July 13, 2023. This dashboard focuses on funding available through the BIL, and we plan to address additional sources of funding, including the Inflation Reduction Act (IRA) in future versions of this whitepaper as more funding is allocated.
+The [Infrastructure Investment and Jobs Act](https://www.congress.gov/bill/117th-congress/house-bill/3684), also known as the Bipartisan Infrastructure Law (BIL), was passed in November 2021 and allocates $1.2 trillion over ten years in funding for infrastructure projects including roads, public transit, broadband, and electric grid upgrades. As federal agencies continue to allocate BIL funding, this map shows how much funding recipients in the U.S. Territories have received as of January 22, 2024. This dashboard focuses on funding available through the BIL, and we plan to address additional sources of funding, including the Inflation Reduction Act (IRA) in future versions of this whitepaper as more funding is allocated.
 <br>
 </div>
 
